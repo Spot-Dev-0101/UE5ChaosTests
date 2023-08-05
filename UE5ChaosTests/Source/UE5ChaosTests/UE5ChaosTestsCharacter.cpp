@@ -9,13 +9,47 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include <GeometryCollection/GeometryCollectionComponent.h>
+#include <GeometryCollection/GeometryCollectionActor.h>
+#include "Chaos/ParticleHandleFwd.h"
+#include "Chaos/PBDRigidsEvolutionFwd.h"
+#include "PhysicsCoreTypes.h"
+#include "Chaos/ArrayCollectionArray.h"
+#include "Chaos/RigidParticles.h"
+#include "Chaos/Rotation.h"
+#include "GeometryCollection/GeometryCollectionParticlesData.h" 
+#include "Chaos/ChaosSolverActor.h"
+#include "Chaos/Utilities.h"
+#include "Chaos/Plane.h"
+#include "Chaos/Box.h"
+#include "Chaos/Sphere.h"
+#include "Chaos/PerParticleGravity.h"
+#include "Chaos/ImplicitObject.h"
+#include "Engine/SkeletalMesh.h"
+#include "Engine/World.h"
+#include "GeometryCollection/GeometryCollectionAlgo.h"
+#include "GeometryCollection/GeometryCollectionComponent.h"
+#include "GeometryCollection/GeometryCollectionObject.h"
+#include "GeometryCollection/GeometryCollectionUtility.h"
+#include "Math/Box.h"
+#include "Physics/Experimental/PhysScene_Chaos.h"
+#include "Physics/PhysicsInterfaceCore.h"
+#include "PhysicsSolver.h"
+#include "GeometryCollection/GeometryCollectionDebugDrawComponent.h"
 
+
+#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Blue,text)
+#define printFString(text, fstring) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT(text), fstring))
 
 //////////////////////////////////////////////////////////////////////////
 // AUE5ChaosTestsCharacter
 
 AUE5ChaosTestsCharacter::AUE5ChaosTestsCharacter()
 {
+
+
+	PrimaryActorTick.TickGroup = TG_PostPhysics;
+
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 		
@@ -64,6 +98,60 @@ void AUE5ChaosTestsCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+}
+
+void AUE5ChaosTestsCharacter::Tick(float DeltaTime) {
+	
+	FHitResult HitResult;
+	FVector Start = FollowCamera->GetComponentLocation();
+	FVector End = Start + (FollowCamera->GetForwardVector()*1000);
+	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_Visibility);
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false);
+
+	if (bHit == true) {
+		
+		if (HitResult.GetActor()->GetClass()->IsChildOf(AGeometryCollectionActor::StaticClass())) {
+			print("");
+			print(HitResult.GetActor()->GetName());
+			AGeometryCollectionActor* GeomCollectionActor = (AGeometryCollectionActor*)HitResult.GetActor();
+
+			FHitResult OutHit;
+
+
+			using namespace Chaos;
+			FPhysScene_Chaos* Scene = GeomCollectionActor->GetGeometryCollectionComponent()->GetInnerChaosScene();//GeomCollectionActor.GetGeometryCollectionComponent()->GetInnerChaosScene();
+			ensure(Scene);
+
+			//GeomCollectionActor.GetGeometryCollectionComponent()->ChaosSolverActor != nullptr ? GeomCollectionActor.GetGeometryCollectionComponent()->ChaosSolverActor->GetSolver() : GeomCollectionActor.GetWorld()->PhysicsScene_Chaos->GetSolver();
+			const Chaos::FPhysicsSolver* Solver = Scene->GetSolver();//GeomCollectionActor->GetGeometryCollectionComponent()->ChaosSolverActor != nullptr ? GeomCollectionActor->GetGeometryCollectionComponent()->ChaosSolverActor->GetSolver() : GeomCollectionActor->GetWorld()->PhysicsScene_Chaos->GetSolver();
+			if (ensure(Solver))
+			{
+				print("Solver is good");
+				FGeometryDynamicCollection* DynamicCollection = GeomCollectionActor->GetGeometryCollectionComponent()->GetDynamicCollection();
+
+				const UGeometryCollection* RestCollection = GeomCollectionActor->GetGeometryCollectionComponent()->GetRestCollection();
+
+				TSharedPtr<FGeometryCollection, ESPMode::ThreadSafe> GeoCollection = RestCollection->GetGeometryCollection();
+
+				TManagedArray<FTransform>& DynamicTransforms = DynamicCollection->Transform;
+
+				print("Before: " + DynamicCollection->Transform[10].GetLocation().ToString());
+				for (int i = 0; i < DynamicCollection->Transform.Num(); i++) {
+					FTransform NewTransform;
+					DynamicTransforms[i].SetTranslation(FVector(0, 0, 0));
+				}
+				print("After: " + DynamicCollection->Transform[10].GetLocation().ToString());
+
+				//GeomCollectionActor->GetGeometryCollectionComponent()->GetDynamicCollection()->Transform = FTransform();
+				
+
+				//FGeometryCollectionAutoInstanceMesh InstanceMesh = RestCollection->GetAutoInstanceMesh(0);
+				
+			}
+		}
+	}
+
+
 }
 
 //////////////////////////////////////////////////////////////////////////
