@@ -110,10 +110,10 @@ void AUE5ChaosTestsCharacter::Tick(float DeltaTime) {
 	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false);
 
 	if (bHit == true) {
-		
+		print(HitResult.GetActor()->GetName());
 		if (HitResult.GetActor()->GetClass()->IsChildOf(AGeometryCollectionActor::StaticClass())) {
 			print("");
-			print(HitResult.GetActor()->GetName());
+			
 			AGeometryCollectionActor* GeomCollectionActor = (AGeometryCollectionActor*)HitResult.GetActor();
 
 			FHitResult OutHit;
@@ -127,7 +127,7 @@ void AUE5ChaosTestsCharacter::Tick(float DeltaTime) {
 			const Chaos::FPhysicsSolver* Solver = Scene->GetSolver();//GeomCollectionActor->GetGeometryCollectionComponent()->ChaosSolverActor != nullptr ? GeomCollectionActor->GetGeometryCollectionComponent()->ChaosSolverActor->GetSolver() : GeomCollectionActor->GetWorld()->PhysicsScene_Chaos->GetSolver();
 			if (ensure(Solver))
 			{
-				print("Solver is good");
+				//print("Solver is good");
 
 
 				FGeometryDynamicCollection* DynamicCollection = GeomCollectionActor->GetGeometryCollectionComponent()->GetDynamicCollection();
@@ -136,21 +136,50 @@ void AUE5ChaosTestsCharacter::Tick(float DeltaTime) {
 
 				TSharedPtr<FGeometryCollection, ESPMode::ThreadSafe> GeoCollection = RestCollection->GetGeometryCollection();
 
+
+				
+
+
 				for (int i = 0; i < DynamicCollection->Active.Num(); i++) {
 					DynamicCollection->Active[i] = true;
 				}
 
-				DynamicCollection->Transform[10].SetLocation(GetActorLocation() - GeomCollectionActor->GetGeometryCollectionComponent()->GetComponentLocation());
+
+				FVector HitRelative = HitResult.Location - HitResult.GetActor()->GetActorLocation();
+				int32 ClosestIndex = 0;
+				double ClosestDistance = 99999999999;
+				for (int i = 0; i < DynamicCollection->MassToLocal.Num(); i++) {
+					
+					double Dist = FVector::Distance(HitRelative, DynamicCollection->MassToLocal[i].GetLocation() + DynamicCollection->Transform[i].GetLocation());
+					if (Dist < ClosestDistance) {
+						ClosestDistance = Dist;
+						ClosestIndex = i;
+					}
+
+				}
+
+				print("Closest Index: " + FString::SanitizeFloat(ClosestIndex));
+
+				print("RelHit: " + HitRelative.ToString());
+				print("Trans: " + DynamicCollection->Transform[ClosestIndex].GetLocation().ToString());
+				print("Mass: " + DynamicCollection->MassToLocal[ClosestIndex].GetLocation().ToString());
+
+				//const TArray<FMatrix>& GlobalMatrices = GeometryCollectionComponent->GetGlobalMatrices();
+				//const FTransform ActorTransform = GeometryCollectionComponent->GetComponentToWorld();
+				//FTransform(CollectionMassToLocal[Idx].ToMatrixWithScale() * GlobalMatrices[Idx] * ActorTransform.ToMatrixWithScale());
+
+				DynamicCollection->Transform[ClosestIndex].SetLocation(GetActorLocation() - GeomCollectionActor->GetGeometryCollectionComponent()->GetComponentLocation() - DynamicCollection->MassToLocal[ClosestIndex].GetLocation());
+				//DynamicCollection->Transform[10] = NewTransform;
 
 				TManagedArray<FTransform>& DynamicTransforms = DynamicCollection->Transform;
 
 
-				print(FString::SanitizeFloat(DynamicCollection->Transform.Num()));
+				//print(FString::SanitizeFloat(DynamicCollection->Transform.Num()));
 				for (int i = 0; i < DynamicCollection->Transform.Num(); i++) {
 					//DynamicTransforms[i].SetTranslation(FVector(0, 0, 0));
 				}
 
-				print("After: " + DynamicCollection->Transform[10].GetRelativeTransform(GeomCollectionActor->GetActorTransform()).ToString());
+				
 
 				//GeomCollectionActor->GetGeometryCollectionComponent()->GetDynamicCollection()->Transform = FTransform();
 				
