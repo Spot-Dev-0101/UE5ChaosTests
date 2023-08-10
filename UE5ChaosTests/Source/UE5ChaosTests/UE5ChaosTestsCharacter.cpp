@@ -49,6 +49,7 @@ AUE5ChaosTestsCharacter::AUE5ChaosTestsCharacter()
 
 
 	PrimaryActorTick.TickGroup = TG_PostPhysics;
+	
 
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -127,20 +128,29 @@ void AUE5ChaosTestsCharacter::Tick(float DeltaTime) {
 			if (ensure(Solver))
 			{
 				print("Solver is good");
+
+
 				FGeometryDynamicCollection* DynamicCollection = GeomCollectionActor->GetGeometryCollectionComponent()->GetDynamicCollection();
 
 				const UGeometryCollection* RestCollection = GeomCollectionActor->GetGeometryCollectionComponent()->GetRestCollection();
 
 				TSharedPtr<FGeometryCollection, ESPMode::ThreadSafe> GeoCollection = RestCollection->GetGeometryCollection();
 
+				for (int i = 0; i < DynamicCollection->Active.Num(); i++) {
+					DynamicCollection->Active[i] = true;
+				}
+
+				DynamicCollection->Transform[10].SetLocation(GetActorLocation() - GeomCollectionActor->GetGeometryCollectionComponent()->GetComponentLocation());
+
 				TManagedArray<FTransform>& DynamicTransforms = DynamicCollection->Transform;
 
-				print("Before: " + DynamicCollection->Transform[10].GetLocation().ToString());
+
+				print(FString::SanitizeFloat(DynamicCollection->Transform.Num()));
 				for (int i = 0; i < DynamicCollection->Transform.Num(); i++) {
-					FTransform NewTransform;
-					DynamicTransforms[i].SetTranslation(FVector(0, 0, 0));
+					//DynamicTransforms[i].SetTranslation(FVector(0, 0, 0));
 				}
-				print("After: " + DynamicCollection->Transform[10].GetLocation().ToString());
+
+				print("After: " + DynamicCollection->Transform[10].GetRelativeTransform(GeomCollectionActor->GetActorTransform()).ToString());
 
 				//GeomCollectionActor->GetGeometryCollectionComponent()->GetDynamicCollection()->Transform = FTransform();
 				
