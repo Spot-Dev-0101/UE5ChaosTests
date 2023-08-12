@@ -84,6 +84,15 @@ AUE5ChaosTestsCharacter::AUE5ChaosTestsCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+
+	TargetBall = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TargetBall"));
+	TargetBall->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh>SphereMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Sphere.Sphere'"));
+	TargetBall->SetStaticMesh(SphereMeshAsset.Object);
+
+	TargetBall->SetWorldScale3D(FVector(0.1f, 0.1f, 0.1f));
+
+	TargetBall->SetCollisionProfileName(TEXT("OverlapAll"));
 }
 
 void AUE5ChaosTestsCharacter::BeginPlay()
@@ -145,22 +154,52 @@ void AUE5ChaosTestsCharacter::Tick(float DeltaTime) {
 				}
 
 
-				FVector HitRelative = HitResult.Location - HitResult.GetActor()->GetActorLocation();
+				FVector HitLocation = HitResult.Location;
 				int32 ClosestIndex = 0;
 				double ClosestDistance = 99999999999;
-				for (int i = 0; i < DynamicCollection->MassToLocal.Num(); i++) {
+				for (int i = 0; i < DynamicCollection->MassToLocal.Num(); i++) {//
 					
-					double Dist = FVector::Distance(HitRelative, DynamicCollection->MassToLocal[i].GetLocation() + DynamicCollection->Transform[i].GetLocation());
+					FTransform OldBrickTransform = DynamicCollection->Transform[i];
+					//FVector BrickRelative = DynamicCollection->MassToLocal[i].GetLocation() + DynamicCollection->Transform[i].GetLocation();
+					//DynamicCollection->Transform[i].BlendWith(TargetTransform, 1);
+					//DynamicCollection->Transform[i].SetLocation(DynamicCollection->Transform[i].GetLocation() + OldBrickTransform.GetLocation());
+					//DynamicCollection->Transform[i].SetRotation(DynamicCollection->Transform[i].GetRotation() + OldBrickTransform.GetRotation());
+
+					FVector RotatedMTL = DynamicCollection->Transform[i].GetRotation().RotateVector(DynamicCollection->MassToLocal[i].GetLocation());
+
+					FVector BrickWorldLocation = DynamicCollection->Transform[i].GetLocation() + RotatedMTL + GeomCollectionActor->GetGeometryCollectionComponent()->GetComponentLocation();
+
+					//print("Hit: " + HitLocation.ToString());
+					//print("Brick: " + BrickLocation.ToString());
+					double Dist = FVector::Distance(HitLocation, BrickWorldLocation);
 					if (Dist < ClosestDistance) {
 						ClosestDistance = Dist;
 						ClosestIndex = i;
 					}
 
+					DynamicCollection->Transform[i] = OldBrickTransform;
+
 				}
 
-				print("Closest Index: " + FString::SanitizeFloat(ClosestIndex));
+				FVector RotatedMTL = DynamicCollection->Transform[ClosestIndex].GetRotation().RotateVector(DynamicCollection->MassToLocal[ClosestIndex].GetLocation());
 
-				print("RelHit: " + HitRelative.ToString());
+				TargetBall->SetWorldLocation(DynamicCollection->Transform[ClosestIndex].GetLocation() + RotatedMTL + GeomCollectionActor->GetGeometryCollectionComponent()->GetComponentLocation());
+
+
+				//ClosestIndex = 10;
+				FTransform NewTransform;
+				//NewTransform.SetLocation(GetActorLocation());
+				DynamicCollection->Transform[ClosestIndex].BlendWith(NewTransform, 1);
+				DynamicCollection->Transform[ClosestIndex].SetRotation(FRotator(0, 0, 0).Quaternion());
+
+
+				
+
+				//TargetBall->SetWorldLocation(GeomCollectionActor->GetGeometryCollectionComponent()->GetComponentLocation() + DynamicCollection->Transform[ClosestIndex].GetLocation());
+				
+				print("Closest Index: " + FString::SanitizeFloat(ClosestIndex));
+				//print("Coll:" + GeomCollectionActor->GetGeometryCollectionComponent()->GetComponentLocation().ToString());
+				print("RelHit: " + HitLocation.ToString());
 				print("Trans: " + DynamicCollection->Transform[ClosestIndex].GetLocation().ToString());
 				print("Mass: " + DynamicCollection->MassToLocal[ClosestIndex].GetLocation().ToString());
 
@@ -168,7 +207,9 @@ void AUE5ChaosTestsCharacter::Tick(float DeltaTime) {
 				//const FTransform ActorTransform = GeometryCollectionComponent->GetComponentToWorld();
 				//FTransform(CollectionMassToLocal[Idx].ToMatrixWithScale() * GlobalMatrices[Idx] * ActorTransform.ToMatrixWithScale());
 
-				DynamicCollection->Transform[ClosestIndex].SetLocation(GetActorLocation() - GeomCollectionActor->GetGeometryCollectionComponent()->GetComponentLocation() - DynamicCollection->MassToLocal[ClosestIndex].GetLocation());
+				FVector BrickRelative = DynamicCollection->MassToLocal[ClosestIndex].GetLocation() + DynamicCollection->Transform[ClosestIndex].GetLocation();
+
+				DynamicCollection->Transform[ClosestIndex].SetLocation(GetActorLocation() - DynamicCollection->MassToLocal[ClosestIndex].GetLocation() - GeomCollectionActor->GetGeometryCollectionComponent()->GetComponentLocation());
 				//DynamicCollection->Transform[10] = NewTransform;
 
 				TManagedArray<FTransform>& DynamicTransforms = DynamicCollection->Transform;
