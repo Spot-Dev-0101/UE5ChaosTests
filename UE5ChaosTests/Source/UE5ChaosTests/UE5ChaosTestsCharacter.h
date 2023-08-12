@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "GeometryCollectionProxyData.h"
+#include "GeometryCollection/GeometryCollectionActor.h" 
+#include "PhysicsProxy/GeometryCollectionPhysicsProxy.h" 
 #include "UE5ChaosTestsCharacter.generated.h"
 
 
@@ -58,6 +61,19 @@ protected:
 	
 	// To add mapping context
 	virtual void BeginPlay();
+
+	void PickupPieceAxis(float value);
+
+	int32 GetLookingAtPiece();
+
+	int32 SelectedPieceIndex;
+
+	FGeometryDynamicCollection* SelectedDynamicCollection;
+	AGeometryCollectionActor* SelectedGeomCollectionActor;
+	FVector CurrentPieceOriginLocation;
+	FVector CurrentPieceLocation;
+	FVector CurrentPieceOriginLocationLocal;
+	Chaos::FPBDRigidsSolver* SelectedSolver;
 
 public:
 
