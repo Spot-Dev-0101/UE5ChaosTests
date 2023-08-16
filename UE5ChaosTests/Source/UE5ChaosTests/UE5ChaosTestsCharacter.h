@@ -8,8 +8,23 @@
 #include "GeometryCollectionProxyData.h"
 #include "GeometryCollection/GeometryCollectionActor.h" 
 #include "PhysicsProxy/GeometryCollectionPhysicsProxy.h" 
+#include "MyGeometryCollectionActor.h"
 #include "UE5ChaosTestsCharacter.generated.h"
 
+USTRUCT(BlueprintType)
+struct FPieceData
+{
+	GENERATED_BODY()
+
+	int32 Index;
+	FTransform Transform;
+	FGeometryDynamicCollection* DynamicCollection;
+	AGeometryCollectionActor* GeomCollectionActor;
+	FVector OriginLocation;
+	FVector Location;
+	FVector OriginLocationLocal;
+
+};
 
 UCLASS(config=Game)
 class AUE5ChaosTestsCharacter : public ACharacter
@@ -73,7 +88,9 @@ protected:
 	FVector CurrentPieceOriginLocation;
 	FVector CurrentPieceLocation;
 	FVector CurrentPieceOriginLocationLocal;
-	Chaos::FPBDRigidsSolver* SelectedSolver;
+	//Chaos::FPBDRigidsSolver* SelectedSolver;
+	FString SelectedPieceKey;
+	TMap<FString, FPieceData> ManipulatedPieceData; //Key is Collection name + piece index
 
 public:
 
