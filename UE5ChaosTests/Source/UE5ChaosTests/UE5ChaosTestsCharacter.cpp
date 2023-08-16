@@ -51,7 +51,7 @@ AUE5ChaosTestsCharacter::AUE5ChaosTestsCharacter()
 {
 
 
-	//PrimaryActorTick.TickGroup = TG_PrePhysics;
+	PrimaryActorTick.TickGroup = TG_PostPhysics;
 	
 
 	// Set size for collision capsule
@@ -170,27 +170,28 @@ void AUE5ChaosTestsCharacter::Tick(float DeltaTime) {
 
 		FTransform OldTransform = DynamicCollection->Transform[Index];
 		FTransform NewTransform;
-		NewTransform.SetRotation(FRotator(0, 0, 0).Quaternion());
+		NewTransform.SetRotation(DynamicCollection->Transform[Index].GetRotation());
 
-		FVector TargetLocation = GetActorLocation() - DynamicCollection->MassToLocal[Index].GetLocation() - GeomCollectionActor->GetGeometryCollectionComponent()->GetComponentLocation();
+		FVector TargetLocation = GetActorLocation() - GeomCollectionActor->GetGeometryCollectionComponent()->GetComponentLocation() - RotatedMTL;//DynamicCollection->MassToLocal[Index].GetLocation();
 		FVector StartLocation = CurrentLocation;
 
 		FVector NewLocation = FMath::Lerp(CurrentLocation, TargetLocation, 0.01f);
 
-		ManipulatedPieceData[SelectedPieceKey].Location = NewLocation;
 		CurrentLocation = NewLocation;
+		ManipulatedPieceData[SelectedPieceKey].Location = CurrentLocation;
+		
 
 		double Progress = FVector::Dist(CurrentLocation, TargetLocation) / FVector::Dist(OriginLocationLocal, TargetLocation);
 
-		print(FString::SanitizeFloat(Progress));
+		//print(FString::SanitizeFloat(Progress));
 
-		ManipulatedPieceData[SelectedPieceKey].Transform.BlendWith(NewTransform, 1 - Progress);
+		//ManipulatedPieceData[SelectedPieceKey].Transform.BlendWith(NewTransform, 1 - Progress);
 
-		ManipulatedPieceData[SelectedPieceKey].Transform.SetLocation(CurrentLocation);
+		ManipulatedPieceData[SelectedPieceKey].Transform.SetLocation(CurrentLocation);// -((DynamicCollection->MassToLocal[Index].GetLocation()) * (1 - Progress)));
 
 		//GeomCollectionActor->GetGeometryCollectionComponent()->GetBoundingBoxArrayCopyOnWrite()[Index] = GeomCollectionActor->GetGeometryCollectionComponent()->GetBoundingBoxArray()[Index].MoveTo(CurrentLocation);
 
-		print(CurrentLocation.ToString());
+		//print((DynamicCollection->MassToLocal[Index].GetLocation() * (1 - Progress)).ToString());
 
 	}
 
@@ -214,7 +215,7 @@ void AUE5ChaosTestsCharacter::Tick(float DeltaTime) {
 		//Data.GeomCollectionActor->GetGeometryCollectionComponent()->RestTransforms = TempDynamicTransforms;
 		//Data.GeomCollectionActor->GetGeometryCollectionComponent()->SetRestState(std::move(TempDynamicTransforms));
 		//Data.GeomCollectionActor->GetGeometryCollectionComponent()->GetRestCollection()->GetGeometryCollection()->Transform = TempDynamicTransforms;
-		Data.GeomCollectionActor->GetGeometryCollectionComponent()->RecreatePhysicsState();
+		//Data.GeomCollectionActor->GetGeometryCollectionComponent()->RecreatePhysicsState();
 
 		//print("Rest: " + Data.GeomCollectionActor->GetGeometryCollectionComponent()->GetRestCollection()->GetGeometryCollection()->Transform[Data.Index].GetLocation().ToString());
 
@@ -225,7 +226,7 @@ void AUE5ChaosTestsCharacter::Tick(float DeltaTime) {
 
 
 	//TArray<UActorComponent*> AllGeomActors = GetWorld()->Actor GetComponentsByClass(UGeometryCollectionComponent::StaticClass());
-	print("NUM: " + FString::SanitizeFloat(GeomActors.Num()));
+	//print("NUM: " + FString::SanitizeFloat(GeomActors.Num()));
 	for (int i = 0; i < GeomActors.Num(); i++) {
 		AGeometryCollectionActor* GeomActor = (AGeometryCollectionActor*)GeomActors[i];
 		UGeometryCollectionComponent* GeomComp = GeomActor->GetGeometryCollectionComponent();
@@ -275,7 +276,7 @@ void AUE5ChaosTestsCharacter::PickupPieceAxis(float value)
 	
 	if (value > 0 && SelectedPieceKey == "NONE") {
 		SelectedPieceIndex = GetLookingAtPiece();
-		print(SelectedPieceKey);
+		//print(SelectedPieceKey);
 	}
 	if (value <= 0) {
 		//SelectedPieceIndex = -99;
@@ -297,7 +298,7 @@ int32 AUE5ChaosTestsCharacter::GetLookingAtPiece()
 	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_Visibility);
 
 	if (bHit == true) {
-		print(HitResult.GetActor()->GetName());
+		//print(HitResult.GetActor()->GetName());
 		if (HitResult.GetActor()->GetClass()->IsChildOf(AGeometryCollectionActor::StaticClass())) {
 			//print("");
 
